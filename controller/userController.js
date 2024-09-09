@@ -4,16 +4,19 @@ const bcrypt = require("bcryptjs");
 const generateOTP = require("../utils/otpGen");
 const redisClient = require("../config/redis");
 const generateToken = require("../utils/jwt");
-const { where } = require("sequelize");
+const DecryptPassword = require("../utils/decryptPassword");
 
 const registerUser = async (req, res) => {
   const saltRounds = 10;
   try {
     const { firstName, lastName, email, password } = req.body;
-    const hashedPassword = await bcrypt.hash(password, saltRounds);
+    // console.log(email)
+
+    const decryptedPassword = DecryptPassword(password);
+    const hashedPassword = await bcrypt.hash(decryptedPassword, saltRounds);
 
     const userData = await User.findOne({ where: { email: email } });
-    if (userData.email === email) {
+    if (userData?.email === email) {
       const otp = generateOTP();
       await redisClient.setEx(email, 300, otp);
 
@@ -52,9 +55,14 @@ const verifyUser = async (req, res) => {
       );
 
       if (affectedRows > 0) {
-        return res
-          .status(200)
-          .json({ message: "User verified successfully!", affectedRows });
+        const userData = await User.findOne({ where: { email: email } });
+        const token = generateToken(userData);
+
+        return res.status(200).json({
+          message: "User verified successfully!",
+          token,
+          userId: userData.id,
+        });
       } else {
         returnres.status(404).send("user not found");
       }
@@ -72,7 +80,12 @@ const authenticateUser = async (req, res) => {
     if (!userData) return res.status(404).send("Invalid Email ");
     if (!userData.verified) return res.status(403).send("User is not verified");
 
-    const isPasswordMatch = bcrypt.compareSync(password, userData.password);
+    const decryptedPassword = DecryptPassword(password);
+
+    const isPasswordMatch = bcrypt.compareSync(
+      decryptedPassword,
+      userData.password
+    );
 
     if (!isPasswordMatch) return res.status(403).send("Incorrect Password");
 
@@ -92,6 +105,13 @@ const getUserData = async (req, res) => {
     const userData = await User.findOne({
       where: { id: userId },
       attributes: { exclude: ["password"] },
+      include: [
+        {
+          model: Project,
+          as: "project",
+          attributes: ["projectId", "title", "description"],
+        },
+      ],
     });
     if (!userData) return res.status(404).send("No User Found");
 
@@ -154,7 +174,8 @@ const updateUserInfo = async (req, res) => {
       });
 
       if (updated > 0) {
-        return res.status(200).json({ message: "Info updated" });
+        const userData = await User.findByPk(userId);
+        return res.status(200).json({ message: "Info updated", userData });
       } else {
         return res.status(500).send("Failed to update Info");
       }
@@ -178,7 +199,11 @@ const updateSkills = async (req, res) => {
     );
 
     if (updateSkills > 0) {
-      return res.status(200).send("Skills updated");
+      const userData = await User.findByPk(userId);
+      return res.status(200).json({
+        message: "Skills updated successfully",
+        skills: updatedUserData.skills,
+      });
     } else {
       return res.status(500).send("Failed to update the skills");
     }
@@ -195,7 +220,11 @@ const updateGoal = async (req, res) => {
       { where: { id: userId } }
     );
     if (updateGoal > 0) {
-      return res.status(200).json({ message: "Goal updated successfully" });
+      const userData = await User.findByPk(userId);
+      return res.status(200).json({
+        message: "Goal updated successfully",
+        userGoal: userData.goal,
+      });
     } else {
       return res.status(500).json({ message: "Failed to update goal" });
     }
@@ -214,7 +243,11 @@ const updateBio = async (req, res) => {
     );
 
     if (updateBio > 0) {
-      return res.status(200).json({ message: "Bio updated successfully" });
+      const userData = await User.findByPk(userId);
+
+      return res
+        .status(200)
+        .json({ message: "Bio updated successfully", userBio: userData.bio });
     } else {
       return res.status(500).json({ message: "Failed to update bio" });
     }

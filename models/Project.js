@@ -35,9 +35,6 @@ const Project = sequelize.define(
   }
 );
 
-Project.belongsTo(User, {
-  foreignKey: "userId",
-  as: "user",
-});
+
 
 module.exports = Project;

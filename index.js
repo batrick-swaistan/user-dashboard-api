@@ -5,10 +5,10 @@ const sequelize = require("./config/mysql");
 const cors = require("cors");
 const PORT = process.env.PORT || 3500;
 const corsOptions = require("./config/crosOption");
-const redisClinet = require("./config/redis");
 const http = require("http");
 const userRouter = require("./route/userRoute");
 const authenticateToken = require("./middleware/authentication");
+const {User,Project} = require("./models/association")
 
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 app.use(express.urlencoded({ extended: false }));
@@ -24,11 +24,11 @@ const testConnection = async () => {
   }
 };
 
-testConnection();
-
 sequelize.sync({ force: false, alter: true }).then(() => {
   console.log("Database & tables created!");
 });
+
+testConnection();
 
 // app.use(authenticateToken);
 app.use(userRouter);
