@@ -1,5 +1,6 @@
 const { DataTypes, UUIDV1, UUIDV4 } = require("sequelize");
 const sequelize = require("../config/mysql");
+const Project = require("./Project");
 
 const User = sequelize.define(
   "User",
@@ -65,15 +66,16 @@ const User = sequelize.define(
       type: DataTypes.JSON,
       allowNull: true,
     },
-    projects: {
-      type: DataTypes.JSON,
-      allowNull: true,
-    },
   },
   {
     tableName: "users",
     timestamps: true,
   }
 );
+
+User.hasMany(Project,{
+  foreignKey:"userId",
+  as:"project"
+})
 
 module.exports = User;
