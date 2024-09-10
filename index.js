@@ -24,7 +24,7 @@ const testConnection = async () => {
   }
 };
 
-sequelize.sync({ force: false, alter: true }).then(() => {
+sequelize.sync({ force: false, alter: false }).then(() => {
   console.log("Database & tables created!");
 });
 

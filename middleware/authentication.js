@@ -1,9 +1,10 @@
 const jwt = require("jsonwebtoken");
 const dotenv = require("dotenv");
+const redisClient = require("../config/redis");
 
 dotenv.config();
 
-const authenticateToken = (req, res, next) => {
+const authenticateToken = async (req, res, next) => {
   const authHeader = req.headers["authorization"];
 
   if (!authHeader) {
@@ -16,13 +17,19 @@ const authenticateToken = (req, res, next) => {
 
   if (token == null) return res.status(401).send("Invalid Token");
 
-  jwt.verify(token,process.env.JWT_SECRET,(err,user)=>{
-    if(err) return res.status(403).send("Un-authorised");
+  jwt.verify(token, process.env.JWT_SECRET, async (err, user) => {
+    if (err) return res.status(403).send("Un-authorised");
 
     req.user = user;
 
+    const email = user.sub;
+    // console.log(user)
+    const tokenFromRedis = await redisClient.get(`Token${email}`);
+    // console.log(tokenFromRedis);
+    if (tokenFromRedis !== token) return res.status(401).send("Invalid Token");
+
     next();
-  })
+  });
 };
 
 module.exports = authenticateToken;

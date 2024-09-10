@@ -33,9 +33,7 @@ const registerUser = async (req, res) => {
     const otp = generateOTP();
     await redisClient.setEx(email, 300, otp);
 
-    return res
-      .status(201)
-      .json({ message: "User registered successfully", otp });
+    return res.status(201).json({ message: "OTP send successfully", otp });
   } catch (err) {
     console.error("Error registering user:", err);
     return res.status(500).json({ error: err.message });
@@ -57,6 +55,7 @@ const verifyUser = async (req, res) => {
       if (affectedRows > 0) {
         const userData = await User.findOne({ where: { email: email } });
         const token = generateToken(userData);
+        await redisClient.setEx(`Token${email}`, 6300, token);
 
         return res.status(200).json({
           message: "User verified successfully!",
@@ -92,7 +91,16 @@ const authenticateUser = async (req, res) => {
     req.user = userData;
 
     const token = generateToken(userData);
-    return res.status(200).json({ token, userId: userData.id });
+
+    await redisClient.setEx(`Token${email}`, 6300, token);
+
+    return res
+      .status(200)
+      .json({
+        message: "Authentication Successfull",
+        token,
+        userId: userData.id,
+      });
   } catch (err) {
     console.error("Failed to login");
     return res.status(500).json({ message: err.message });
@@ -108,7 +116,7 @@ const getUserData = async (req, res) => {
       include: [
         {
           model: Project,
-          as: "project",
+          as: "projects",
           attributes: ["projectId", "title", "description"],
         },
       ],
@@ -132,17 +140,21 @@ const updateUser = async (req, res) => {
       profile,
       position,
     };
-    Object.keys(fieldsToUpdate).forEach((key) => {
-      if (fieldsToUpdate[key] === undefined || fieldsToUpdate[key] === null) {
-        delete fieldsToUpdate[key];
-      }
-    });
+    // Object.keys(fieldsToUpdate).forEach((key) => {
+    //   if (fieldsToUpdate[key] === undefined || fieldsToUpdate[key] === null) {
+    //     delete fieldsToUpdate[key];
+    //   }
+    // });
     const [affectedRows] = await User.update(fieldsToUpdate, {
       where: { id: userId },
     });
 
     if (affectedRows > 0) {
-      return res.status(200).send("User profile updated successfully");
+      const userData = await User.findByPk(userId);
+      return res.status(200).json({
+        message: "User profile updated successfully",
+        userData,
+      });
     } else {
       return res
         .status(400)
@@ -202,7 +214,7 @@ const updateSkills = async (req, res) => {
       const userData = await User.findByPk(userId);
       return res.status(200).json({
         message: "Skills updated successfully",
-        skills: updatedUserData.skills,
+        skills: userData.skills,
       });
     } else {
       return res.status(500).send("Failed to update the skills");
@@ -273,14 +285,45 @@ const updateProject = async (req, res) => {
       if (project) {
         (project.title = title), (project.description = description);
 
-        await project.save();
+        const projectData = await project.save();
+        return res
+          .status(200)
+          .json({ messgae: "Project updated successfully", projectData });
       }
     } else {
       const projectData = await Project.create({ title, description, userId });
+      return res
+        .status(200)
+        .json({ messgae: "Project saved successfully", projectData });
     }
-    return res.status(200).send("Project saved successfully");
   } catch (err) {
     return res.status(500).json({ message: err.message });
+  }
+};
+
+const deleteUser = async (req, res) => {
+  const { userId } = req.query;
+  try {
+    const deletedCount = await User.destroy({ where: { id: userId } });
+    if (deletedCount > 0) {
+      return res.status(200).json({ message: "User deleted succesfully" });
+    } else {
+      return res.status(500).json({ message: "unable to delete user" });
+    }
+  } catch (err) {
+    console.error(err.message);
+    return res.status(500).json({ message: err.message });
+  }
+};
+
+const logout = async (req, res) => {
+  const email = req.params.email;
+  // console.log(email);
+  try {
+    await redisClient.del(`Token${email}`);
+    return res.status(200).send("User logged out");
+  } catch (err) {
+    console.error(err);
   }
 };
 
@@ -295,4 +338,6 @@ module.exports = {
   updateUserInfo,
   updateUser,
   updateSkills,
+  deleteUser,
+  logout,
 };
