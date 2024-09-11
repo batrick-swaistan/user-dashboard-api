@@ -8,7 +8,7 @@ const corsOptions = require("./config/crosOption");
 const http = require("http");
 const userRouter = require("./route/userRoute");
 const authenticateToken = require("./middleware/authentication");
-const {User,Project} = require("./models/association")
+const { User, Project } = require("./models/association");
 
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 app.use(express.urlencoded({ extended: false }));
@@ -24,7 +24,7 @@ const testConnection = async () => {
   }
 };
 
-sequelize.sync({ force: false, alter: false }).then(() => {
+sequelize.sync({ force: false, alter: true }).then(() => {
   console.log("Database & tables created!");
 });
 

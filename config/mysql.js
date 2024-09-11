@@ -1,8 +1,8 @@
 const { Sequelize } = require("sequelize");
 
-const sequelize = new Sequelize("business_optima", "root", "password", {
-  host: "localhost",
-  port: 3310,
+const sequelize = new Sequelize("business_optima", "batrick", "password", {
+  host: "34.132.178.82",
+  port: 3306,
   dialect: "mysql",
   logging: false,
 });
