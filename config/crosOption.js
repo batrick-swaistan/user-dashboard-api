@@ -1,6 +1,6 @@
 const whitelist = [
   "http://localhost:3000",
-  "https://user-dashboard-ui.onrender.com/",
+  "https://user-dashboard-ui.onrender.com",
 ];
 
 const corsOptions = {
