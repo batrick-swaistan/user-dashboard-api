@@ -1,8 +1,11 @@
 const { Sequelize } = require("sequelize");
+const dotenv = require("dotenv");
 
-const sequelize = new Sequelize("business_optima", "batrick", "password", {
-  host: "34.132.178.82",
-  port: 3306,
+dotenv.config();
+
+const sequelize = new Sequelize("business_optima", "root", process.env.DB_PASSWORD, {
+  host: "localhost",
+  port: 3310,
   dialect: "mysql",
   logging: false,
 });
