@@ -12,6 +12,7 @@ const {
   updateSkills,
   deleteUser,
   logout,
+  chatResponse,
 } = require("../controller/userController");
 const authenticateToken = require("../middleware/authentication");
 const upload = require("../middleware/uploadMiddleware");
