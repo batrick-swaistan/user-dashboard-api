@@ -327,7 +327,6 @@ const logout = async (req, res) => {
 };
 
 
-
 module.exports = {
   registerUser,
   verifyUser,
@@ -340,5 +339,5 @@ module.exports = {
   updateUser,
   updateSkills,
   deleteUser,
-  logout
+  logout,
 };
