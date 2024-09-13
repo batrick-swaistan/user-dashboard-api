@@ -5,6 +5,7 @@ const generateOTP = require("../utils/otpGen");
 const redisClient = require("../config/redis");
 const generateToken = require("../utils/jwt");
 const DecryptPassword = require("../utils/decryptPassword");
+const axios = require("axios");
 
 const registerUser = async (req, res) => {
   const saltRounds = 10;
@@ -94,13 +95,11 @@ const authenticateUser = async (req, res) => {
 
     await redisClient.setEx(`Token${email}`, 6300, token);
 
-    return res
-      .status(200)
-      .json({
-        message: "Authentication Successfull",
-        token,
-        userId: userData.id,
-      });
+    return res.status(200).json({
+      message: "Authentication Successfull",
+      token,
+      userId: userData.id,
+    });
   } catch (err) {
     console.error("Failed to login");
     return res.status(500).json({ message: err.message });
@@ -326,6 +325,7 @@ const logout = async (req, res) => {
     console.error(err);
   }
 };
+
 
 module.exports = {
   registerUser,
